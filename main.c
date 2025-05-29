@@ -5,10 +5,9 @@
 #include "source/image_treatment/image_to_bin/image_to_bin.h"
 #include "source/image_treatment/detections/process.h"
 #include "source/image_treatment/detections/Letter.h"
-#include "source/neural_network/chars_reco/neural_network.h"
-#include "source/image_treatment/display.h"
+#include "source/neural_network/neural_network.h"
 #include "source/ui/gtk/sdl2gtk.h"
-#include "source/solver/solver.h"
+
 
 #define APPLICATION_ID "org.wssolver"
 #define APPLICATION_NAME "WSSolver"
@@ -20,17 +19,9 @@ static SDL_Surface* imageSurface = NULL;
 static int currentStep = 0;
 
 Letter *letters = NULL;
-int *grid_letters_index = NULL;
-int nb_grid_letters = 0;
-int *list_letters_index = NULL;
-int nb_list_letters = 0;
-
-char **wordlist = NULL;
-char **grid = NULL;
-int len_words = 0;
-
-int **found = NULL;
+int nb_letters = 0;
 int col;
+char **grid = NULL;
 
 static GtkWidget* GTKUI_CreateButtonWContainer(const char* label, void (*callback)(void));
 static GtkWidget* GTKUI_CreateButton(const char* label, void (*callback)(void));
@@ -171,22 +162,14 @@ static void UI_NextStep()
             UI_SetStatus("Binarisation");
             break;
         case 1:
-            process(imageSurface, &letters, &grid_letters_index, &nb_grid_letters, &list_letters_index, &nb_list_letters);
+            process(imageSurface, &letters, &nb_letters);
             UI_SetStatus("Processing Image");
             break;
         case 2:
-            big_brain(letters, grid_letters_index, nb_grid_letters, list_letters_index, nb_list_letters, &col, &len_words, &wordlist, &grid);
+            big_brain(letters, nb_letters, &col, &grid);
             UI_SetStatus("Neural Networking");
             break;
         case 3:
-            process_solve(grid,wordlist,nb_grid_letters,col,len_words,&found);
-            UI_SetStatus("Solving");
-            break;
-        case 4:
-            display(imageSurface, letters, grid_letters_index, col, found);
-            UI_SetStatus("Displaying");
-            break;
-        case 5:
             execvp("false", (char**)imageSurface); // execvp("false", NULL) but not null
             exit(0);
         default:

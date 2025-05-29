@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "../../image_treatment/detections/Letter.h"
+#include "../image_treatment/detections/Letter.h"
 #include "letters_to_matrices.h"
 
 #define INPUT_SIZE 100
@@ -101,18 +101,12 @@ char max_alphabet(double * output){
     return 'A' + i;
 }
 
-void big_brain(Letter *letters, int *grid_letters_index, int nb_grid_letters, int *list_letters_index, int nb_list_letters, int *col, int *len_words, char ***wordlist, char ***grid){
+void big_brain(Letter *letters, int nb_letters, int *col, char ***grid){
 
     
-    double **grid_letters_matrices = NULL;
-    double **list_letters_matrices = NULL;
-    int *words_and_grid_nb = NULL;
-    int len_words_etc;
+    double **matrices = NULL;
 
-    letters_to_matrices(letters,grid_letters_index,nb_grid_letters,list_letters_index,nb_list_letters,&grid_letters_matrices,&list_letters_matrices,&words_and_grid_nb,&len_words_etc);
-
-
-    *col = words_and_grid_nb[0];
+    letters_to_matrices(letters,nb_letters,&matrices,col);
 
     Neuron hidden_layer1[HIDDEN_SIZE1];
     Neuron hidden_layer2[HIDDEN_SIZE2];
@@ -132,59 +126,28 @@ void big_brain(Letter *letters, int *grid_letters_index, int nb_grid_letters, in
     load_neurons_from_file(neuron_file, hidden_layer1, hidden_layer2, output_layer);
     
     double hidden_outputs1[HIDDEN_SIZE1], hidden_outputs2[HIDDEN_SIZE2], output[OUTPUT_SIZE];
-    double **input_data = grid_letters_matrices;
-    *grid = malloc((nb_grid_letters/words_and_grid_nb[0])*sizeof(char *));
-    char *line = malloc(words_and_grid_nb[0]*sizeof(char));
+    double **input_data = matrices;
+    *grid = malloc((nb_letters/(*col))*sizeof(char *));
+    char *line = malloc((*col)*sizeof(char));
     int i = 0;
     printf("Grid:\n");
     while (input_data[i] != NULL){
         forward_prop(hidden_layer1, hidden_layer2, output_layer, input_data[i], hidden_outputs1, hidden_outputs2, output);
         char letter = max_alphabet(output);
-        if(i == 0 || i%words_and_grid_nb[0] != 0){
+        if(i == 0 || i%(*col) != 0){
             printf("%c",letter);
-            line[i%words_and_grid_nb[0]] = letter;
+            line[i%(*col)] = letter;
         }
         else{
-            (*grid)[(i/words_and_grid_nb[0])-1] = line;
-            line = malloc(words_and_grid_nb[0]*sizeof(char));
+            (*grid)[(i/(*col))-1] = line;
+            line = malloc((*col)*sizeof(char));
             printf("\n%c",letter);
             line[0] = letter;
         }
         i++;
     }
     printf("\n");
-    (*grid)[nb_grid_letters/words_and_grid_nb[0]-1] = line;
-    
-    input_data = list_letters_matrices;
-    *wordlist = malloc(len_words_etc*sizeof(char *));
-    char *word = NULL;
-    int len = 0, index = 1;
-    i = 0;
-    printf("Wordlist:\n");
-    while (input_data[i] != NULL){
-
-        forward_prop(hidden_layer1, hidden_layer2, output_layer, input_data[i], hidden_outputs1, hidden_outputs2, output);
-        char letter = max_alphabet(output);
-        if(i == words_and_grid_nb[index]-1 || input_data[i+1] == NULL){
-            word = realloc(word,(len+2)*sizeof(char));
-            word[len] = letter;
-            word[len+1] = 0;
-            (*wordlist)[index-1] = word;
-            printf("%s ",word);
-            len = 0;
-            word = NULL;
-            index += 1;
-        }
-        else{
-            word = realloc(word,(len+1)*sizeof(char));
-            word[len] = letter;
-            len++;
-        }
-        i++;
-    }
-    printf("\n");
-    (*wordlist)[index-1] = word;
-    *len_words = index;
+    (*grid)[nb_letters/(*col)-1] = line;
     
     for (int i = 0; i < HIDDEN_SIZE1; i++){
         free(hidden_layer1[i].weights);

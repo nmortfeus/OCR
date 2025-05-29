@@ -43,7 +43,7 @@ void add_all_pixels(SDL_Surface *surface, int x, int y, Letter *letter, char *vi
 
 // Checking if it is a valid letter
 int good_letter(Letter letter){
-    if (letter.nb_pixels < 30 || letter.nb_pixels > 1000){
+    if (letter.nb_pixels < 30 || letter.nb_pixels > 2000){
         return 0;
     }
     else if (letter.bottom-letter.top > 100 || letter.right - letter.left > 100 || letter.bottom-letter.top < 5){
@@ -97,3 +97,35 @@ Letter *find_letters(SDL_Surface *surface,int *nb_letters){
     free(visited);
     return letters;
 }
+
+int min(Letter *letters, int x, int len){
+    Letter letter_min = letters[x];
+    int min_index = x;
+    int i = x + 1;
+    while(i < len){
+        Letter letter = letters[i];
+        if ((letter.top + letter.bottom)/2 < (letter_min.top + letter_min.bottom)/2 - 10 || 
+        (abs((letter.top + letter.bottom)/2 - (letter_min.top + letter_min.bottom)/2) < 10 && (letter.right + letter.left)/2 < (letter_min.right + letter_min.left)/2)){
+            min_index = i;
+            letter_min = letter;
+        }
+        i++;
+    }
+    return min_index;
+}
+
+// Sort function (to know where letters are on the screen from left to right and top to bottom)
+void sort(Letter *letters, int len){
+    for(int i = 0; i < len; i++){
+        Letter temp_letter = letters[i];
+        int min_index = min(letters, i,len);
+        letters[i] = letters[min_index];
+        letters[min_index] = temp_letter;
+    }
+}
+
+void process_letters(SDL_Surface *surface, Letter **letters, int *nb_letters){
+    *letters = find_letters(surface, nb_letters);
+    sort(*letters,*nb_letters); 
+}
+
